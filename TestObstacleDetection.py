@@ -22,7 +22,6 @@ import time                            # Provides time-related functions
 import cv2                             # OpenCV library
 import numpy as np                     # Import NumPy library
  
- 
 # //////////////////////////////////////////////////
 # Global constants
 # //////////////////////////////////////////////////
