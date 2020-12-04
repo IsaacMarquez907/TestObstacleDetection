@@ -54,7 +54,7 @@ BACKGROUND_FRAME_COUNT_DEFAULT = 50
 # //////////////////////////////////////////////////
 
 # Method for detecting motion within the out_frame
-def DetectMotion():
+def DetectMotion(weight):
 
 	# store the current values stored of the global variables
 	# out_frame, video_stream, and the frame_lock
@@ -86,19 +86,17 @@ def GrabFrame():
 	while True:
 		# wait until the lock is free for the out_frame
 		with frame_lock:
-			# keep looping if there is not an availiable out_frame
+			# keep looping if there is not an availiable out_frames
 			if out_frame is None:
 				continue
 
-			(flag, encodedImage) = cv2.imencode(".jpg", out_frame)
+			# convert the image to JPEG
+			(result, jpg_image) = cv2.imencode(".jpg", out_frame)
 
-			# ensure the frame was successfully encoded
-			if not flag:
-				continue
-
-		# yield the output frame in the byte format
-		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
-			bytearray(encodedImage) + b'\r\n')
+		# out the JPEG image to the application
+		yield(b'--frame\r\n' 
+			b'Content-Type: image/jpeg\r\n\r\n' + 
+			bytearray(jpg_image) + b'\r\n')
 
 # //////////////////////////////////////////////////
 # Public Routes
@@ -122,14 +120,15 @@ def VideoFeed():
 # -- Main Method to start the flask app -- 
 if __name__ == '__main__':
 
+	# create a single daemon thread for detecting motion
+	motion_thread = threading.Thread(target=DetectMotion, args=(
+		BACKGROUND_FRAME_COUNT_DEFAULT,))
+	motion_thread.daemon = True
+	motion_thread.start()
+
 	# start the flask app
 	app.run(host=HOST_IP, port=HOST_PORT, debug=True,
 		threaded=True, use_reloader=False)
-		
-	# create a single daemon thread for detecting motion
-	motion_thread = threading.Thread(target=DetectMotion, args=(BACKGROUND_FRAME_COUNT_DEFAULT))
-	motion_thread.daemon = True
-	motion_thread.start()
 
 # release the video stream pointer
 video_stream.stop()
