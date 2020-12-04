@@ -54,7 +54,7 @@ BACKGROUND_FRAME_COUNT_DEFAULT = 50
 # //////////////////////////////////////////////////
 
 # Method for detecting motion within the out_frame
-def DetectMotion(weight):
+def DetectMotion():
 
 	# store the current values stored of the global variables
 	# out_frame, video_stream, and the frame_lock
@@ -68,9 +68,13 @@ def DetectMotion(weight):
 
 	# indefinitely loop over the frames
 	while True:
-		# read in the next frame frome the video 
+		# read in the next frame from the video and resize it
 		current_frame = video_stream.read()
 		current_frame = imutils.resize(current_frame, width=400)
+
+		# if the total number of frames is over the configurable 
+		# threshold => then start detecting motion
+	#	if total_frames > BACKGROUND_FRAME_COUNT_DEFAULT
 
 		# store the current frame as the output frame
 		with frame_lock:
@@ -121,8 +125,7 @@ def VideoFeed():
 if __name__ == '__main__':
 
 	# create a single daemon thread for detecting motion
-	motion_thread = threading.Thread(target=DetectMotion, args=(
-		BACKGROUND_FRAME_COUNT_DEFAULT,))
+	motion_thread = threading.Thread(target=DetectMotion)
 	motion_thread.daemon = True
 	motion_thread.start()
 
