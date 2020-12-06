@@ -74,7 +74,19 @@ def DetectMotion():
 
 		# if the total number of frames is over the configurable 
 		# threshold => then start detecting motion
-	#	if total_frames > BACKGROUND_FRAME_COUNT_DEFAULT
+		if total_frames > BACKGROUND_FRAME_COUNT_DEFAULT:
+			# pass the current frame into the motion detector object
+			bounding_box = motion_detector.DetectMotion(current_frame)
+
+			# if there was motion => draw the bounding box onto the image
+			if bounding_box is not None:
+				(startX, startY, endX, endY) = bounding_box
+				cv2.rectangle(current_frame, (startX, startY), (endX, endY), (255, 255, 0), 2)
+		
+		# increment the total numbers of frames recieved
+		# also update the background model with the current frame
+		motion_detector.UpdateBG(current_frame)
+		total_frames += 1
 
 		# store the current frame as the output frame
 		with frame_lock:
