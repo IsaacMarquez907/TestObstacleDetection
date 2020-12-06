@@ -17,15 +17,17 @@
 # //////////////////////////////////////////////////
 
 from ImageProcessing.MotionDetector import MotionDetector
-from imutils.video import VideoStream
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 from flask import Flask, Response, render_template
+import numpy as np
 import imutils
 import cv2
 import threading
 import time
 
 # //////////////////////////////////////////////////
-# Global constants
+# Global constants and Objects
 # //////////////////////////////////////////////////
 
 # global lock for the current out frame
@@ -37,59 +39,115 @@ out_frame = None
 # global variable for the flask application
 app = Flask(__name__)
 
-# global variable for the video stream
-video_stream = VideoStream(usePiCamera=1).start()
-time.sleep(2.0) # warm-up the camera
-
 # global variables to store the host ip and port number
-HOST_IP   = '192.168.1.17'
+HOST_IP   = '192.168.1.9'
 HOST_PORT = '5000'
 
 # global constant to hold the minimum number of frames
 # to construct a backgournd image
 BACKGROUND_FRAME_COUNT_DEFAULT = 50
 
+# the resolution of the camera and frame rate
+CAMERA_WIDTH  =            640
+CAMERA_HEIGHT =            480
+CAMERA_FRAME_RATE =         30 
+
+# color used for bounding box
+BOX_COLOR = (255,0,0)
+
+# //////////////////////////////////////////////////
+# Initialize the Camera 
+# //////////////////////////////////////////////////
+
+# Initialize the pi camera object
+pi_camera = PiCamera()
+ 
+# Set the camera resolution -- the smaller the faster
+# the processing => i use a 640 x 480 window
+pi_camera.resolution = (CAMERA_WIDTH, CAMERA_HEIGHT)
+ 
+# Set the framerate of the camera
+pi_camera.framerate = CAMERA_FRAME_RATE
+
+# Create a link with the camera to get the raw data 
+raw_capture = PiRGBArray(pi_camera, size=(CAMERA_WIDTH, CAMERA_HEIGHT))
+
+# Create the background subtractor object
+background_model = cv2.createBackgroundSubtractorMOG2(history=150,
+  varThreshold=25, detectShadows=False)
+
+# Wait a 0.1 seconds to allow the camera time to warmup
+time.sleep(0.1)
+ 
+# Create kernel for morphological operation. 
+kernel = np.ones((20,20),np.uint8)
+
 # //////////////////////////////////////////////////
 # Public Methods
 # //////////////////////////////////////////////////
+
+# Method to Draw a bounding box on the passed in frame
+def DrawBoundingBox(frame, areas, contours):
+	# find the largest moving object in the image
+	max_index = np.argmax(areas)
+
+	# Draw the bounding box
+	countour = contours[max_index]
+	(x, y, w, h) = cv2.boundingRect(countour)
+	cv2.rectangle(frame, (x, y), (x+w, x+h), BOX_COLOR, 3)
+
+	# Draw a circle at the center of teh bounding box
+	circle_x = x + int(w/2)
+	circle_y = y + int(h/2)
+	cv2.circle(frame, (circle_x, circle_y), 4, BOX_COLOR, 1)
+
+	# Draw the coordinates of the center of teh bounding box
+	coords = "x: " + str(circle_x) + ", y: " + str(circle_y)
+	cv2.putText(frame, coords, (circle_x - 10, circle_y - 10),
+		cv2.FONT_HERSHEY_SIMPLEX, 0.5, BOX_COLOR, 2)
 
 # Method for detecting motion within the out_frame
 def DetectMotion():
 
 	# store the current values stored of the global variables
-	# out_frame, video_stream, and the frame_lock
-	global out_frame, video_stream, frame_lock
-
-	# intialize the variable storing the number of frames processed to 0
-	total_frames = 0
+	# out_frame, pi_camera, and the frame_lock
+	global out_frame, pi_camera, frame_lock
 
 	# initialize the motion detector object
 	motion_detector = MotionDetector()
 
-	# indefinitely loop over the frames
-	while True:
-		# read in the next frame from the video and resize it
-		current_frame = video_stream.read()
+	# Capture frames continuously from the camera
+	for frame in pi_camera.capture_continuous(raw_capture, format="bgr", use_video_port=True):
+		# grab the raw array data from the current frame
+		current_frame = frame.array
 
-		# if the total number of frames is over the configurable 
-		# threshold => then start detecting motion
-		if total_frames > BACKGROUND_FRAME_COUNT_DEFAULT:
-			# pass the current frame into the motion detector object
-			bounding_box = motion_detector.DetectMotion(current_frame)
+		# subtract the current image from the background model
+		processed_frame = background_model.apply(current_frame)
 
-			# if there was motion => draw the bounding box onto the image
-			if bounding_box is not None:
-				(startX, startY, endX, endY) = bounding_box
-				cv2.rectangle(current_frame, (startX, startY), (endX, endY), (255, 255, 0), 2)
-		
-		# increment the total numbers of frames recieved
-		# also update the background model with the current frame
-		motion_detector.UpdateBG(current_frame)
-		total_frames += 1
+		# remove internal gaps using OpenCV's closing operation
+		processed_frame = cv2.morphologyEx(processed_frame, cv2.MORPH_CLOSE, kernel)
+
+		# remove image noise using OpenCV's median blur
+		processed_frame = cv2.medianBlur(processed_frame, 5)
+
+		# Convert the image into a binary image using OpenCV's threshold
+		(result,  processed_frame) = cv2.threshold(processed_frame, 127, 255, cv2.THRESH_BINARY)
+
+		# find motion by finding the contours within the image
+		contours, hierarchy = cv2.findContours(processed_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		areas = [cv2.contourArea(c) for c in contours]
+
+		# if contours were found, draw a bounding box on the 
+		# image around the largest moving object
+		if len(areas) > 0:
+			DrawBoundingBox(current_frame, areas, contours)
 
 		# store the current frame as the output frame
 		with frame_lock:
 			out_frame = current_frame.copy()
+
+		# Clear the stream in preparation for the next frame
+		raw_capture.truncate(0)
 
 # Method for generating a frame for output to the flask app
 def GrabFrame():
@@ -143,6 +201,3 @@ if __name__ == '__main__':
 	# start the flask app
 	app.run(host=HOST_IP, port=HOST_PORT, debug=True,
 		threaded=True, use_reloader=False)
-
-# release the video stream pointer
-video_stream.stop()

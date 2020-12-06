@@ -54,6 +54,7 @@ class MotionDetector:
 	def __init__(self, weight=0.5):
 		# initialize the background model to NULL   
 		self.background = None
+		
 
 	# update the background model with a new frame
 	def UpdateBG(self, frame):
