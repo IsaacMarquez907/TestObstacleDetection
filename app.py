@@ -72,16 +72,9 @@ pi_camera.framerate = CAMERA_FRAME_RATE
 # Create a link with the camera to get the raw data 
 raw_capture = PiRGBArray(pi_camera, size=(CAMERA_WIDTH, CAMERA_HEIGHT))
 
-# Create the background subtractor object
-background_model = cv2.createBackgroundSubtractorMOG2(history=150,
-  varThreshold=25, detectShadows=False)
-
 # Wait a 0.1 seconds to allow the camera time to warmup
 time.sleep(0.1)
  
-# Create kernel for morphological operation. 
-kernel = np.ones((20,20),np.uint8)
-
 # //////////////////////////////////////////////////
 # Public Methods
 # //////////////////////////////////////////////////
@@ -121,21 +114,8 @@ def DetectMotion():
 		# grab the raw array data from the current frame
 		current_frame = frame.array
 
-		# subtract the current image from the background model
-		processed_frame = background_model.apply(current_frame)
-
-		# remove internal gaps using OpenCV's closing operation
-		processed_frame = cv2.morphologyEx(processed_frame, cv2.MORPH_CLOSE, kernel)
-
-		# remove image noise using OpenCV's median blur
-		processed_frame = cv2.medianBlur(processed_frame, 5)
-
-		# Convert the image into a binary image using OpenCV's threshold
-		(result,  processed_frame) = cv2.threshold(processed_frame, 127, 255, cv2.THRESH_BINARY)
-
-		# find motion by finding the contours within the image
-		contours, hierarchy = cv2.findContours(processed_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-		areas = [cv2.contourArea(c) for c in contours]
+		# detect motion using the MotionDetector object
+		(contours, areas) = motion_detector.DetectMotion(current_frame)
 
 		# if contours were found, draw a bounding box on the 
 		# image around the largest moving object

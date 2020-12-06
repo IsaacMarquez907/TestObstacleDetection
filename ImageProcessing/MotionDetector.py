@@ -15,7 +15,7 @@
 # //////////////////////////////////////////////////
 # Import the necessary packages
 # //////////////////////////////////////////////////
-import numpy 
+import numpy as np
 import imutils
 import cv2
 
@@ -23,25 +23,15 @@ import cv2
 # Global constants
 # //////////////////////////////////////////////////
 
-# global variable for the weighted value of the background
-# and the incoming frame
-WEIGHT = 0.5
+# global variable for threshold value on subtraction of image
+T_VAL = 127
+
+# global variable for how many frames to hold in the history
+HISTORY_SIZE = 150
 
 # //////////////////////////////////////////////////
 # Public Methods
 # //////////////////////////////////////////////////
-
-# Public method to preprocess a image
-def PreProcess(frame):
-	# scale down the image
-	processed_frame = imutils.resize(frame, width=400)
-
-	# convert the image to grayscale and blur it to reduce noise
-	processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2GRAY)
-	processed_frame = cv2.GaussianBlur(processed_frame, (7,7), 0)
-
-	# return the processed frame
-	return processed_frame
 
 # //////////////////////////////////////////////////
 # Public Classes
@@ -50,66 +40,42 @@ def PreProcess(frame):
 # -- Public class to detect moving objects in a frame --
 class MotionDetector:
 
-	# initilize the background model for this class
-	def __init__(self, weight=0.5):
-		# initialize the background model to NULL   
-		self.background = None
-		
+	# initilize the member variables for this class
+	def __init__(self):
+		# kernel for morphological operation. 
+		self.kernel = np.ones((20,20),np.uint8)
 
-	# update the background model with a new frame
+		# Create the background subtractor object
+		self.background_model = cv2.createBackgroundSubtractorMOG2(history=HISTORY_SIZE,
+			varThreshold=T_VAL, detectShadows=False)
+
+	# Update the background model with a new frame.
+	# This function will perform the following
+	#	1. subtract current frame from the background
+	#	2. convert the frame into a binary image
+	#	3. Update the background model
 	def UpdateBG(self, frame):
-		# perform necessary preprocessing of the image
-		processed_frame = PreProcess(frame)
+		# process the frame
+		processed_frame = self.background_model.apply(frame)
 
-		# if there has been no frames yet
-		# initialize the background to the current frame
-		if self.background is None:
-			self.background = processed_frame.copy().astype("float")
-			return
-
-		# otherwise update the background model by taking
-		# the weighted average with configurable weight
-		cv2.accumulateWeighted(processed_frame, self.background, WEIGHT)
+		# return the processed frame
+		return processed_frame
 
 	# detect any motion within the passed in frame
-	def DetectMotion(self, frame, tVal=25):
-		# perform necessary preprocessing of the image
-		processed_frame = PreProcess(frame)
+	def DetectMotion(self, frame):
+		# Process the passed in frame against the background model.
+		# see function header of UpdateBG for more details
+		processed_frame = self.UpdateBG(frame)
 
-		# compute the difference of the passed in frame against the
-		# the background model. Then take the threshold of image so 
-		# that it is now a binary image with either white or black
-		# pixels
-		image_difference = cv2.absdiff(self.background.astype("uint8"), processed_frame)
-		binary_image = cv2.threshold(image_difference, tVal, 255, cv2.THRESH_BINARY)[1]
+		# remove internal gaps using OpenCV's closing operation
+		processed_frame = cv2.morphologyEx(processed_frame, cv2.MORPH_CLOSE, self.kernel)
 
-		# isolate objects and remove noise using erode and dilate
-		# within the opencv library
-		binary_image = cv2.erode(binary_image, None, iterations=3)
-		binary_image = cv2.dilate(binary_image, None, iterations=3)
+		# remove image noise using OpenCV's median blur
+		processed_frame = cv2.medianBlur(processed_frame, 5)
 
-		#find the contours within the image to localize motion
-		contours = cv2.findContours(binary_image.copy(), cv2.RETR_EXTERNAL,
-			cv2.CHAIN_APPROX_SIMPLE)
-		contours = imutils.grab_contours(contours)
+		# find motion by finding the contours within the image
+		contours, hierarchy = cv2.findContours(processed_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		areas = [cv2.contourArea(c) for c in contours]
 
-		# if there were contours, find the largest bounding box
-		if len(contours) != 0:
-			# loop over the contours and find the largest bounding box
-			# aslo initilize Start and end coordinates as infinity and negative infinity
-			(startX, startY) = (numpy.inf, numpy.inf)
-			(endX, endY) = (-numpy.inf, -numpy.inf)
-			for current_contour in contours:
-				# compute the current bounding box
-				(x, y, w, h) = cv2.boundingRect(current_contour)
-
-				# if it is larger then the previous bounding box
-				# store it the start and end coordinates
-				(startX,startY) = (min(startX, x), min(startY, y))
-				(endX, endY) = (max(endX, x + w), max(endY, y + h))
-
-			# return the largest bounding box
-			return (startX, startY, endX, endY)
-		else:
-			# else => return None
-			return None
+		# return the contours and areas found
+		return (contours, areas)
