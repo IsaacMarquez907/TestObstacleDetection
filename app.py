@@ -70,7 +70,6 @@ def DetectMotion():
 	while True:
 		# read in the next frame from the video and resize it
 		current_frame = video_stream.read()
-		current_frame = imutils.resize(current_frame, width=400)
 
 		# if the total number of frames is over the configurable 
 		# threshold => then start detecting motion

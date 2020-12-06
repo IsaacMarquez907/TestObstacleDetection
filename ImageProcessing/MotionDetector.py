@@ -28,6 +28,22 @@ import cv2
 WEIGHT = 0.5
 
 # //////////////////////////////////////////////////
+# Public Methods
+# //////////////////////////////////////////////////
+
+# Public method to preprocess a image
+def PreProcess(frame):
+	# scale down the image
+	processed_frame = imutils.resize(frame, width=400)
+
+	# convert the image to grayscale and blur it to reduce noise
+	processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2GRAY)
+	processed_frame = cv2.GaussianBlur(processed_frame, (7,7), 0)
+
+	# return the processed frame
+	return processed_frame
+
+# //////////////////////////////////////////////////
 # Public Classes
 # //////////////////////////////////////////////////
 
@@ -41,31 +57,29 @@ class MotionDetector:
 
 	# update the background model with a new frame
 	def UpdateBG(self, frame):
+		# perform necessary preprocessing of the image
+		processed_frame = PreProcess(frame)
+
 		# if there has been no frames yet
 		# initialize the background to the current frame
 		if self.background is None:
-			self.background = frame.copy().astype("float")
+			self.background = processed_frame.copy().astype("float")
 			return
-		
-		# convert the image to grayscale and blur it to reduce noise
-		processed_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		processed_frame = cv2.GaussianBlur(processed_frame, (7,7), 0)
 
 		# otherwise update the background model by taking
 		# the weighted average with configurable weight
-		cv2.accumulateWeighted(frame, self.background, WEIGHT)
+		cv2.accumulateWeighted(processed_frame, self.background, WEIGHT)
 
 	# detect any motion within the passed in frame
 	def DetectMotion(self, frame, tVal=25):
-		# convert the image to grayscale and blur it to reduce noise
-		processed_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		processed_frame = cv2.GaussianBlur(processed_frame, (7,7), 0)
+		# perform necessary preprocessing of the image
+		processed_frame = PreProcess(frame)
 
 		# compute the difference of the passed in frame against the
 		# the background model. Then take the threshold of image so 
 		# that it is now a binary image with either white or black
 		# pixels
-		image_difference = cv2.absdiff(self.background.astype("uint8"), frame)
+		image_difference = cv2.absdiff(self.background.astype("uint8"), processed_frame)
 		binary_image = cv2.threshold(image_difference, tVal, 255, cv2.THRESH_BINARY)[1]
 
 		# isolate objects and remove noise using erode and dilate
