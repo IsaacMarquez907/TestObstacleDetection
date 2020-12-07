@@ -1,9 +1,20 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <title>Pi Video</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata&display=swap" rel="stylesheet">
+  <title>Pi Video</title>
   </head>
   <body>
-    <h1>Pi Video</h1>
-    <img src="{{ url_for('VideoFeed') }}">
+    <div id="banner">
+     <h1>Video Stream from Ras Pi</h1>
+  </div>
+    <div id="banner2">
+      <h1>Isaac Marquez</h1>
+    </div>
+    <div id="video">
+      <img src="{{ url_for('VideoFeed') }}">
+  </div>
   </body>
 </html>
