@@ -36,7 +36,17 @@ The streaming was accomplished by the micro-fraemwork Flask which allowed for a 
 
 # Resources
 
-[1] asdf
+[1] Morphological Transformations: https://docs.opencv.org/master/d9/d61/tutorial_py_morphological_ops.html
 
-[2] adf
+[2] Smoothing Images: https://docs.opencv.org/3.4/dc/dd3/tutorial_gausian_median_blur_bilateral_filter.html
+
+[3] Images Thresholding: https://docs.opencv.org/master/d7/d4d/tutorial_py_thresholding.html
+
+[4] Finding Contours: https://docs.opencv.org/master/d4/d73/tutorial_py_contours_begin.html
+
+[5] Article on Motion Detection on Rapberry Pi: https://docs.opencv.org/master/d4/d73/tutorial_py_contours_begin.html
+
+[6] Tutorial on downloading OpenCV on Rapberry Pi: https://www.pyimagesearch.com/2019/09/16/install-opencv-4-on-raspberry-pi-4-and-raspbian-buster/
+
+[7] Example of streaming video from Raspberry Pi: https://www.pyimagesearch.com/2019/09/16/install-opencv-4-on-raspberry-pi-4-and-raspbian-buster/
 
