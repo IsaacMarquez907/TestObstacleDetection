@@ -21,10 +21,10 @@ The basic idea for my implementation of motion detection can be seen in the UML 
 
 Below I have added a specific example of the motion detection algorithms ran on a image of me standing in front of the camera. The first step takes the frame and subtracts it from the background model and turns it into a binary image for easier image processing. I then perform some noise reduction and smoothing using more of OpenCV's tools to remove sharp edges and salt and pepper noise. The final result is a relative singular white object representing the moving object. The software then will draw a bounding box to contain all the white pixels in the image. 
 
-|Original Frame| Subtracted From Background Model|
+|Original Frame|Subtracted From Background Model|
 |--|--|
 ![original_image](Docs/original_frame.PNG) | ![subtraction_image](Docs/apply_background_model_subtraction.PNG) |
-|Closing of Gaps|Smoothing of |
+|Closing of Gaps|Smoothing of contours|
 ![original_image](Docs/morph_close_image.PNG) | ![original_image](Docs/median_blur_snapshot.PNG) 
 
 ## Streaming to Website
