@@ -4,7 +4,70 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Inconsolata&display=swap" rel="stylesheet">
-  <title>Pi Video</title>
+  <title>Ras Pi Stream</title>
+    <style>
+      body{
+    background-color: #646C79;
+    font-family: 'Inconsolata', monospace;  
+    }
+
+    #banner{
+        background-color: #1F3044;
+        width: 100%;
+        text-align: center;
+        height: 70px;
+        position: relative;
+        bottom: 20px;
+        color:#FB9039;
+        font-weight: bold;
+        font-size: 30px;
+        outline: 2px solid #FB9039;
+        vertical-align: middle;
+    }
+
+    #banner2{
+        text-align: center;
+        background-color: #FB9039;
+        color:  #1F3044;
+        justify-content: center;
+        width: 50%;
+        margin: auto;
+        position: relative;
+        bottom: 42px;
+        font-weight: bold;
+        font-size: 25px;
+        color:  #1F3044;
+        outline: 2px solid #1F3044;
+        height: 55px;
+        vertical-align: middle;
+    }
+
+    #video{  
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+        width: 35%;
+    }
+
+    #description{
+      width: 50%;
+      height: 100px;
+      outline: 2px solid #1F3044;
+      margin: auto;
+      text-align: center;
+      position: relative;
+      top: 50px;
+      background-color: #7d8593;
+      font-size: 18px;
+    }
+
+    p{
+      position: relative;
+     top: 12px;
+      line-height: 200%
+    }
+
+    </style>
   </head>
   <body>
     <div id="banner">
@@ -15,6 +78,13 @@
     </div>
     <div id="video">
       <img src="{{ url_for('VideoFeed') }}">
+  </div>
+  </div>
+  <div id="description">
+    <p>
+      This is a real time video stream from a Raspberry Pi running OpenCV for motion detection. Visit the GitHub Link below for more information: 
+      <a href = https://github.com/IsaacMarquez907/TestObstacleDetection> https://github.com/IsaacMarquez907/TestObstacleDetection</href>
+    </p>
   </div>
   </body>
 </html>

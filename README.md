@@ -1,4 +1,6 @@
 # TestObstacleDetection: Introduction
+![example_gif](Docs/motion_detection_example.gif)
+
 This project initially started as a proof of concept for navigation of robot using a Raspberry Pi to recieve a video from the Pi camera and detect motion. By the end of it I learned how to detect motion using OpenCV's subtraction algorithms and how to stream the results to a web browser using the micro-framework, Flask.
 
 # Hardware Overview
